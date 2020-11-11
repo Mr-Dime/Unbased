@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/upgrades/contracts/Initializable.sol";
 
-contract Degov is ERC20, Ownable, Initializable {
+contract Ungov is ERC20, Ownable, Initializable {
     using SafeMath for uint256;
 
     uint256 private constant DECIMALS = 18;
@@ -65,14 +65,14 @@ contract Degov is ERC20, Ownable, Initializable {
     event LogSetQuorumThresholdRatio(uint256 quorumThreshold_);
     event LogSetProposalThresholdRatio(uint256 proposalThreshold_);
 
-    constructor() public ERC20("Degov", "DEGOV") {}
+    constructor() public ERC20("Ungov", "UNGOV") {}
 
     /**
      * @notice Initialize the token with policy address and pool for the token distribution
-     * @param degovDaiLpPool_ Address of the pool contract where newly minted degov tokens are sent.
+     * @param ungovDaiLpPool_ Address of the pool contract where newly minted ungov tokens are sent.
      */
-    function initialize(address degovDaiLpPool_) external initializer {
-        _mint(degovDaiLpPool_, TOTAL_SUPPLY);
+    function initialize(address ungovDaiLpPool_) external initializer {
+        _mint(ungovDaiLpPool_, TOTAL_SUPPLY);
     }
 
     /**
@@ -177,13 +177,13 @@ contract Degov is ERC20, Ownable, Initializable {
         address signatory = ecrecover(digest, v, r, s);
         require(
             signatory != address(0),
-            "Degov::delegateBySig: invalid signature"
+            "Ungov::delegateBySig: invalid signature"
         );
         require(
             nonce == nonces[signatory]++,
-            "Degov::delegateBySig: invalid nonce"
+            "Ungov::delegateBySig: invalid nonce"
         );
-        require(now <= expiry, "Degov::delegateBySig: signature expired");
+        require(now <= expiry, "Ungov::delegateBySig: signature expired");
         return _delegate(signatory, delegatee);
     }
 
@@ -212,7 +212,7 @@ contract Degov is ERC20, Ownable, Initializable {
     {
         require(
             blockNumber < block.number,
-            "Degov::getPriorVotes: not yet determined"
+            "Ungov::getPriorVotes: not yet determined"
         );
 
         uint32 nCheckpoints = numCheckpoints[account];
@@ -290,7 +290,7 @@ contract Degov is ERC20, Ownable, Initializable {
     ) internal {
         uint32 blockNumber = safe32(
             block.number,
-            "Degov::_writeCheckpoint: block number exceeds 32 bits"
+            "Ungov::_writeCheckpoint: block number exceeds 32 bits"
         );
 
         if (
