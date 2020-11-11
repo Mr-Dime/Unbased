@@ -12,7 +12,7 @@ interface IOracle {
     function getData() external returns (uint256, bool);
 }
 
-interface DebaseI {
+interface UnbaseI {
     function totalSupply() external view returns (uint256);
 
     function balanceOf(address who) external returns (uint256);
@@ -31,20 +31,20 @@ interface StabilizerI {
         int256 supplyDelta_,
         int256 rebaseLag_,
         uint256 exchangeRate_,
-        uint256 debasePolicyBalance
+        uint256 unbasePolicyBalance
     ) external returns (uint256 rewardAmount_);
 }
 
 /**
- * @title Debase Monetary Supply Policy
- * @dev This is an implementation of the Debase Ideal Money protocol.
- *      Debase operates asymmetrically on expansion and contraction. It will both split and
+ * @title Unbase Monetary Supply Policy
+ * @dev This is an implementation of the Unbase Ideal Money protocol.
+ *      Unbase operates asymmetrically on expansion and contraction. It will both split and
  *      combine coins to maintain a stable unit price.
  *
- *      This component regulates the token supply of the Debase ERC20 token in response to
+ *      This component regulates the token supply of the Unbase ERC20 token in response to
  *      market oracles.
  */
-contract DebasePolicy is Ownable, Initializable {
+contract UnbasePolicy is Ownable, Initializable {
     using SafeMath for uint256;
     using SafeMathInt for int256;
     using UInt256Lib for uint256;
@@ -132,8 +132,8 @@ contract DebasePolicy is Ownable, Initializable {
         StabilizerI pool;
     }
 
-    // Address of the debase token
-    DebaseI public debase;
+    // Address of the unbase token
+    UnbaseI public unbase;
 
     // Market oracle provides the token/USD exchange rate as an 18 decimal fixed point number.
     // (eg) An oracle value of 1.5e18 it would mean 1 Ample is trading for $1.50.
@@ -208,16 +208,16 @@ contract DebasePolicy is Ownable, Initializable {
     }
 
     /**
-     * @notice Initializes the debase policy with addresses of the debase token and the oracle deployer. Along with inital rebasing parameters
-     * @param debase_ Address of the debase token
+     * @notice Initializes the unbase policy with addresses of the unbase token and the oracle deployer. Along with inital rebasing parameters
+     * @param unbase_ Address of the unbase token
      * @param orchestrator_ Address of the protocol orchestrator
      */
-    function initialize(address debase_, address orchestrator_)
+    function initialize(address unbase_, address orchestrator_)
         external
         initializer
         onlyOwner
     {
-        debase = DebaseI(debase_);
+        unbase = UnbaseI(unbase_);
         orchestrator = orchestrator_;
 
         upperDeviationThreshold = 5 * 10**(DECIMALS - 2);
@@ -293,7 +293,7 @@ contract DebasePolicy is Ownable, Initializable {
 
     /**
      * @notice Function to set the oracle to get the exchange price
-     * @param oracle_ Address of the debase oracle
+     * @param oracle_ Address of the unbase oracle
      */
     function setOracle(address oracle_) external onlyOwner {
         oracle = IOracle(oracle_);
@@ -341,14 +341,14 @@ contract DebasePolicy is Ownable, Initializable {
 
         if (
             supplyDelta > 0 &&
-            debase.totalSupply().add(uint256(supplyDelta)) > MAX_SUPPLY
+            unbase.totalSupply().add(uint256(supplyDelta)) > MAX_SUPPLY
         ) {
-            supplyDelta = (MAX_SUPPLY.sub(debase.totalSupply())).toInt256Safe();
+            supplyDelta = (MAX_SUPPLY.sub(unbase.totalSupply())).toInt256Safe();
         }
 
         checkStabilizers(supplyDelta, rebaseLag, exchangeRate);
 
-        uint256 supplyAfterRebase = debase.rebase(epoch, supplyDelta);
+        uint256 supplyAfterRebase = unbase.rebase(epoch, supplyDelta);
         assert(supplyAfterRebase <= MAX_SUPPLY);
         emit LogRebase(epoch, exchangeRate, supplyDelta, rebaseLag, now);
     }
@@ -371,11 +371,11 @@ contract DebasePolicy is Ownable, Initializable {
                     supplyDelta_,
                     rebaseLag_,
                     exchangeRate_,
-                    debase.balanceOf(address(this))
+                    unbase.balanceOf(address(this))
                 );
 
                 if (rewardToTransfer != 0) {
-                    debase.transfer(address(instance.pool), rewardToTransfer);
+                    unbase.transfer(address(instance.pool), rewardToTransfer);
                     emit LogRewardSentToStabilizer(
                         index,
                         instance.pool,
@@ -721,7 +721,7 @@ contract DebasePolicy is Ownable, Initializable {
         // supplyDelta = totalSupply * (rate - targetRate) / targetRate
         int256 targetRateSigned = targetRate.toInt256Safe();
         return
-            debase
+            unbase
                 .totalSupply()
                 .toInt256Safe()
                 .mul(rate.toInt256Safe().sub(targetRateSigned))
