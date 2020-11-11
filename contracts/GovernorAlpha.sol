@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/upgrades/contracts/Initializable.sol";
 import "./Timelock.sol";
 
-interface DegovI {
+interface UngovI {
     function totalSupply() external view returns (uint256);
 
     function quorumThreshold() external view returns (uint256);
@@ -22,16 +22,16 @@ interface DegovI {
 contract GovernorAlpha is Initializable, Ownable {
     using SafeMath for uint256;
     /// @notice The name of this contract
-    string public constant name = "Degov Governor Alpha";
+    string public constant name = "Ungov Governor Alpha";
 
     /// @notice The number of votes in support of a proposal required in order for a quorum to be reached and for a vote to succeed
     function quorumVotes() public view returns (uint256) {
-        return (degov.totalSupply().mul(degov.quorumThreshold())).div(100);
+        return (ungov.totalSupply().mul(ungov.quorumThreshold())).div(100);
     }
 
     /// @notice The number of votes required in order for a voter to become a proposer
     function proposalThreshold() public view returns (uint256) {
-        return (degov.totalSupply().mul(degov.proposalThreshold())).div(100);
+        return (ungov.totalSupply().mul(ungov.proposalThreshold())).div(100);
     }
 
     /// @notice The maximum number of actions that can be included in a proposal
@@ -49,7 +49,7 @@ contract GovernorAlpha is Initializable, Ownable {
     Timelock public timelock;
 
     /// @notice The address of the Compound governance token
-    DegovI public degov;
+    UngovI public ungov;
 
     /// @notice The address of the Governor Guardian
     address public guardian;
@@ -180,17 +180,17 @@ contract GovernorAlpha is Initializable, Ownable {
     }
 
     /**
-     * @notice Initializes governor function with the address of the timelock,degov contracts and guardian of the governor contract
+     * @notice Initializes governor function with the address of the timelock,ungov contracts and guardian of the governor contract
      * @param timelock_ Address of the timelock contract
-     * @param degov_ Address of the degov token
+     * @param ungov_ Address of the ungov token
      */
-    function initialize(Timelock timelock_, address degov_)
+    function initialize(Timelock timelock_, address ungov_)
         external
         onlyOwner
         initializer
     {
         timelock = timelock_;
-        degov = DegovI(degov_);
+        ungov = UngovI(ungov_);
         guardian = msg.sender;
     }
 
@@ -202,7 +202,7 @@ contract GovernorAlpha is Initializable, Ownable {
         string memory description
     ) public returns (uint256) {
         require(
-            degov.getPriorVotes(msg.sender, block.number.sub(1)) >
+            ungov.getPriorVotes(msg.sender, block.number.sub(1)) >
                 proposalThreshold(),
             "GovernorAlpha::propose: proposer votes below proposal threshold"
         );
@@ -338,7 +338,7 @@ contract GovernorAlpha is Initializable, Ownable {
         Proposal storage proposal = proposals[proposalId];
         require(
             msg.sender == guardian ||
-                degov.getPriorVotes(proposal.proposer, block.number.sub(1)) <
+                ungov.getPriorVotes(proposal.proposer, block.number.sub(1)) <
                 proposalThreshold(),
             "GovernorAlpha::cancel: proposer above threshold"
         );
@@ -457,7 +457,7 @@ contract GovernorAlpha is Initializable, Ownable {
             !receipt.hasVoted,
             "GovernorAlpha::_castVote: voter already voted"
         );
-        uint256 votes = degov.getPriorVotes(voter, proposal.startBlock);
+        uint256 votes = ungov.getPriorVotes(voter, proposal.startBlock);
 
         if (support) {
             proposal.forVotes = proposal.forVotes.add(votes);
