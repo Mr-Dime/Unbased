@@ -16,7 +16,7 @@ import "./lib/SafeMathInt.sol";
  *      We support splitting the currency in expansion and combining the currency on contraction by
  *      changing the exchange rate between the hidden 'gons' and the public 'fragments'.
  */
-contract Debase is ERC20, Initializable {
+contract Unbase is ERC20, Initializable {
     // PLEASE READ BEFORE CHANGING ANY ACCOUNTING OR MATH
     // Anytime there is division, there is a risk of numerical instability from rounding errors. In
     // order to minimize this risk, we adhere to the following guidelines:
@@ -40,10 +40,10 @@ contract Debase is ERC20, Initializable {
     event LogRebase(uint256 indexed epoch_, uint256 totalSupply_);
 
     // Used for authentication
-    address public debasePolicy;
+    address public unbasePolicy;
 
-    modifier onlyDebasePolicy() {
-        require(msg.sender == debasePolicy);
+    modifier onlyUnbasePolicy() {
+        require(msg.sender == unbasePolicy);
         _;
     }
 
@@ -73,66 +73,66 @@ contract Debase is ERC20, Initializable {
     // it's fully paid.
     mapping(address => mapping(address => uint256)) private _allowedFragments;
 
-    constructor() public ERC20("Debase", "DEBASE") {}
+    constructor() public ERC20("Unbase", "UNBASE") {}
 
     struct DropVariables {
-        uint256 debaseDaiPoolVal;
-        uint256 debaseDaiPoolGons;
-        uint256 debaseDaiLpPoolVal;
-        uint256 debaseDaiLpPoolGons;
+        uint256 unbaseDaiPoolVal;
+        uint256 unbaseDaiPoolGons;
+        uint256 unbaseDaiLpPoolVal;
+        uint256 unbaseDaiLpPoolGons;
         uint256 airDropperVal;
         uint256 airDropperGons;
-        uint256 debasePolicyPoolVal;
-        uint256 debasePolicyGons;
+        uint256 unbasePolicyPoolVal;
+        uint256 unbasePolicyGons;
     }
 
     /**
      * @notice Initializes with the policy,Dai,DaiLp pool as parameters. 
                The function then sets the total supply to the initial supply and calculates the gon per fragment. 
                It also sets the value and the gons for both the Dai and DaiLp reward pools.
-     * @param debaseDaiPool Address of the Debase Dai pool contract
-     * @param debaseDaiTotalRatio_ Ratio of total supply given to Debase Dai Pool
-     * @param debaseDaiLpPool Address of the Debase Dai Lp pool contract
-     * @param debaseDaiLpTotalRatio_ Ratio of total supply given to Debase Dai Lp Pool
+     * @param unbaseDaiPool Address of the Unbase Dai pool contract
+     * @param unbaseDaiTotalRatio_ Ratio of total supply given to Unbase Dai Pool
+     * @param unbaseDaiLpPool Address of the Unbase Dai Lp pool contract
+     * @param unbaseDaiLpTotalRatio_ Ratio of total supply given to Unbase Dai Lp Pool
      * @param airDropper Address of the air dropper
      * @param airDropperTotalRatio_ Ratio of total supply given to air dropper
-     * @param debasePolicy_ Address of the debase policy
-     * @param debasePolicyTotalRatio_ Ratio of total supply given to debase policy
+     * @param unbasePolicy_ Address of the unbase policy
+     * @param unbasePolicyTotalRatio_ Ratio of total supply given to unbase policy
      */
     function initialize(
-        address debaseDaiPool,
-        uint256 debaseDaiTotalRatio_,
-        address debaseDaiLpPool,
-        uint256 debaseDaiLpTotalRatio_,
+        address unbaseDaiPool,
+        uint256 unbaseDaiTotalRatio_,
+        address unbaseDaiLpPool,
+        uint256 unbaseDaiLpTotalRatio_,
         address airDropper,
         uint256 airDropperTotalRatio_,
-        address debasePolicy_,
-        uint256 debasePolicyTotalRatio_
+        address unbasePolicy_,
+        uint256 unbasePolicyTotalRatio_
     ) external initializer {
         require(
-            debaseDaiTotalRatio_
-                .add(debaseDaiLpTotalRatio_)
+            unbaseDaiTotalRatio_
+                .add(unbaseDaiLpTotalRatio_)
                 .add(airDropperTotalRatio_)
-                .add(debasePolicyTotalRatio_) == 100
+                .add(unbasePolicyTotalRatio_) == 100
         );
         DropVariables memory instance;
 
         _totalSupply = INITIAL_FRAGMENTS_SUPPLY;
         _gonsPerFragment = TOTAL_GONS.div(_totalSupply);
 
-        debasePolicy = debasePolicy_;
+        unbasePolicy = unbasePolicy_;
 
-        instance.debaseDaiPoolVal = _totalSupply.mul(debaseDaiTotalRatio_).div(
+        instance.unbaseDaiPoolVal = _totalSupply.mul(unbaseDaiTotalRatio_).div(
             100
         );
-        instance.debaseDaiPoolGons = instance.debaseDaiPoolVal.mul(
+        instance.unbaseDaiPoolGons = instance.unbaseDaiPoolVal.mul(
             _gonsPerFragment
         );
 
-        instance.debaseDaiLpPoolVal = _totalSupply
-            .mul(debaseDaiLpTotalRatio_)
+        instance.unbaseDaiLpPoolVal = _totalSupply
+            .mul(unbaseDaiLpTotalRatio_)
             .div(100);
-        instance.debaseDaiLpPoolGons = instance.debaseDaiLpPoolVal.mul(
+        instance.unbaseDaiLpPoolGons = instance.unbaseDaiLpPoolVal.mul(
             _gonsPerFragment
         );
 
@@ -142,26 +142,26 @@ contract Debase is ERC20, Initializable {
 
         instance.airDropperGons = instance.airDropperVal.mul(_gonsPerFragment);
 
-        instance.debasePolicyPoolVal = _totalSupply
-            .mul(debasePolicyTotalRatio_)
+        instance.unbasePolicyPoolVal = _totalSupply
+            .mul(unbasePolicyTotalRatio_)
             .div(100);
-        instance.debasePolicyGons = instance.debasePolicyPoolVal.mul(
+        instance.unbasePolicyGons = instance.unbasePolicyPoolVal.mul(
             _gonsPerFragment
         );
 
-        _gonBalances[debaseDaiPool] = instance.debaseDaiPoolGons;
-        _gonBalances[debaseDaiLpPool] = instance.debaseDaiLpPoolGons;
+        _gonBalances[unbaseDaiPool] = instance.unbaseDaiPoolGons;
+        _gonBalances[unbaseDaiLpPool] = instance.unbaseDaiLpPoolGons;
         _gonBalances[airDropper] = instance.airDropperGons;
-        _gonBalances[debasePolicy] = instance.debasePolicyGons;
+        _gonBalances[unbasePolicy] = instance.unbasePolicyGons;
 
-        emit Transfer(address(0x0), debaseDaiPool, instance.debaseDaiPoolVal);
+        emit Transfer(address(0x0), unbaseDaiPool, instance.unbaseDaiPoolVal);
         emit Transfer(
             address(0x0),
-            debaseDaiLpPool,
-            instance.debaseDaiLpPoolVal
+            unbaseDaiLpPool,
+            instance.unbaseDaiLpPoolVal
         );
         emit Transfer(address(0x0), airDropper, instance.airDropperVal);
-        emit Transfer(address(0x0), debasePolicy, instance.debasePolicyPoolVal);
+        emit Transfer(address(0x0), unbasePolicy, instance.unbasePolicyPoolVal);
     }
 
     /**
@@ -171,7 +171,7 @@ contract Debase is ERC20, Initializable {
      */
     function rebase(uint256 epoch, int256 supplyDelta)
         external
-        onlyDebasePolicy
+        onlyUnbasePolicy
         returns (uint256)
     {
         if (supplyDelta == 0) {
