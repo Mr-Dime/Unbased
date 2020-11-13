@@ -13,7 +13,7 @@ interface PoolI {
     function periodFinish() external returns (uint256);
 }
 
-interface DebaseI {
+interface UnbaseI {
     function totalSupply() external view returns (uint256);
 
     function balanceOf(address who) external returns (uint256);
@@ -25,7 +25,7 @@ interface DebaseI {
     function transfer(address to, uint256 value) external returns (bool);
 }
 
-interface DebasePolicyI {
+interface UnbasePolicyI {
     function rebase() external;
 }
 
@@ -35,20 +35,20 @@ interface UniV2PairI {
 
 /**
  * @title Orchestrator
- * @notice The orchestrator is the main entry point for rebase operations. It coordinates the debase policy
+ * @notice The orchestrator is the main entry point for rebase operations. It coordinates the Unbase policy
  *         actions with external consumers.
  */
 contract Orchestrator is Ownable, Initializable {
     using SafeMath for uint256;
 
     // Stable ordering is not guaranteed.
-    DebaseI public debase;
-    DebasePolicyI public debasePolicy;
+    UnbaseI public Unbase;
+    UnbasePolicyI public unbasePolicy;
 
-    PoolI public debaseDaiPool;
-    PoolI public debaseDaiLpPool;
+    PoolI public unbaseDaiPool;
+    PoolI public unbaseDaiLpPool;
 
-    PoolI public degovDaiLpPool;
+    PoolI public ungovDaiLpPool;
     bool public rebaseStarted;
     uint256 public maximumRebaseTime;
     uint256 public rebaseRequiredSupply;
@@ -100,20 +100,20 @@ contract Orchestrator is Ownable, Initializable {
     }
 
     function initialize(
-        address debase_,
-        address debasePolicy_,
-        address debaseDaiPool_,
-        address debaseDaiLpPool_,
-        address degovDaiLpPool_,
+        address unbase_,
+        address unbasePolicy_,
+        address unbaseDaiPool_,
+        address unbaseDaiLpPool_,
+        address ungovDaiLpPool_,
         uint256 rebaseRequiredSupply_,
         uint256 oracleStartTimeOffset
     ) external initializer {
-        debase = DebaseI(debase_);
-        debasePolicy = DebasePolicyI(debasePolicy_);
+        unbase = UnbaseI(unbase_);
+        unbasePolicy = UnbasePolicyI(unbasePolicy_);
 
-        debaseDaiPool = PoolI(debaseDaiPool_);
-        debaseDaiLpPool = PoolI(debaseDaiLpPool_);
-        degovDaiLpPool = PoolI(degovDaiLpPool_);
+        unbaseDaiPool = PoolI(unbaseDaiPool_);
+        unbaseDaiLpPool = PoolI(unbaseDaiLpPool_);
+        ungovDaiLpPool = PoolI(ungovDaiLpPool_);
 
         maximumRebaseTime = block.timestamp + oracleStartTimeOffset;
         rebaseStarted = false;
@@ -158,7 +158,7 @@ contract Orchestrator is Ownable, Initializable {
 
     /**
      * @notice Main entry point to initiate a rebase operation.
-     *         The Orchestrator calls rebase on the debase policy and notifies downstream applications.
+     *         The Orchestrator calls rebase on the unbase policy and notifies downstream applications.
      *         Contracts are guarded from calling, to avoid flash loan attacks on liquidity
      *         providers.
      *         If a transaction in the transaction list reverts, it is swallowed and the remaining
@@ -166,10 +166,10 @@ contract Orchestrator is Ownable, Initializable {
      */
     function rebase() external {
         // Rebase will only be called when 95% of the total supply has been distributed or current time is 3 weeks since the orchestrator was deployed.
-        // To stop the rebase from getting stuck if no enough rewards are distributed. This will also start the degov/debase pool reward drops
+        // To stop the rebase from getting stuck if no enough rewards are distributed. This will also start the ungov/unbase pool reward drops
         if (!rebaseStarted) {
-            uint256 rewardsDistributed = debaseDaiPool.rewardDistributed().add(
-                debaseDaiLpPool.rewardDistributed()
+            uint256 rewardsDistributed = unbaseDaiPool.rewardDistributed().add(
+                unbaseDaiLpPool.rewardDistributed()
             );
 
             require(
@@ -178,13 +178,13 @@ contract Orchestrator is Ownable, Initializable {
                 "Not enough rewards distributed or time less than start time"
             );
 
-            //Start degov reward drop
-            degovDaiLpPool.startPool();
+            //Start ungov reward drop
+            ungovDaiLpPool.startPool();
             rebaseStarted = true;
             emit LogRebaseStarted(block.timestamp);
         }
         require(msg.sender == tx.origin); // solhint-disable-line avoid-tx-origin
-        debasePolicy.rebase();
+        unbasePolicy.rebase();
 
         for (uint256 i = 0; i < uniSyncs.length; i++) {
             if (uniSyncs[i].enabled) {
