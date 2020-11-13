@@ -88,38 +88,38 @@ contract ExampleOracleSimple {
 }
 
 contract Oracle is Ownable, ExampleOracleSimple {
-    address debase;
-    address public debasePolicy;
+    address unbase;
+    address public unbasePolicy;
     uint256 constant SCALE = 10**18;
     address constant uniFactory = 0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f;
 
     constructor(
-        address debase_,
+        address unbase_,
         address Dai_,
-        address debasePolicy_
-    ) public ExampleOracleSimple(uniFactory, debase_, Dai_) {
-        debase = debase_;
-        debasePolicy = debasePolicy_;
+        address unbasePolicy_
+    ) public ExampleOracleSimple(uniFactory, unbase_, Dai_) {
+        unbase = unbase_;
+        unbasePolicy = unbasePolicy_;
     }
 
     /**
-     * @notice Function that must be called 24 hours before the very first rebase of debase protocol to get an accurate price.
+     * @notice Function that must be called 24 hours before the very first rebase of unbase protocol to get an accurate price.
      */
     function updateBeforeRebase() public onlyOwner {
         update();
     }
 
     /**
-     * @notice Get a price data sample from the oralce. Can only be called by the debase policy.
+     * @notice Get a price data sample from the oralce. Can only be called by the unbase policy.
      * @return The price and if the price if valid
      */
     function getData() external returns (uint256, bool) {
         require(
-            msg.sender == debasePolicy,
-            "Only debase policy can get data from oracle"
+            msg.sender == unbasePolicy,
+            "Only unbase policy can get data from oracle"
         );
         update();
-        uint256 price = consult(debase, SCALE); // will return 1 BASED in Dai
+        uint256 price = consult(unbase, SCALE); // will return 1 BASED in Dai
 
         if (price == 0) {
             return (0, false);
