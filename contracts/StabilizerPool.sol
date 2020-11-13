@@ -182,18 +182,18 @@ contract StabilizerPool is
 
     /**
      * @notice Upon succesive succesful s ( exchange price in target price ) the  count will increase. As the count increases if it
-     * meets the set threshold. Then a precentage of debase tokens assigned to the policy contract will be transfered to the stabilizer pool.
+     * meets the set threshold. Then a precentage of unbase tokens assigned to the policy contract will be transfered to the stabilizer pool.
      * With the added condition that the stabilizer pool has completed it's distribution period or a new flag is set to ovverride the time period.
      */
     function checkStabilizerAndGetReward(
         int256 supplyDelta_,
         int256 rebaseLag_,
         uint256 exchangeRate_,
-        uint256 debasePolicyBalance
+        uint256 unbasePolicyBalance
     ) external returns (uint256 rewardAmount_) {
         require(
             msg.sender == policy,
-            "Only debase policy contract can call this"
+            "Only unbase policy contract can call this"
         );
 
         if (supplyDelta_ == 0) {
@@ -202,7 +202,7 @@ contract StabilizerPool is
             if (count >= countThreshold) {
                 count = 0;
                 if (
-                    debasePolicyBalance >= rewardAmount &&
+                    unbasePolicyBalance >= rewardAmount &&
                     (beforePeriodFinish || now >= periodFinish)
                 ) {
                     notifyRewardAmount(rewardAmount);
